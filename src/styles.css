@@ -103,11 +103,22 @@ body {
 }
 
 .cube-viewer {
+  position: relative;
   height: min(44vh, 400px);
   border-radius: 10px;
   overflow: hidden;
   touch-action: none;
   background: radial-gradient(circle at 50% 30%, #1b2130 0%, #10131a 70%);
+}
+
+.viewer-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 14px;
+  pointer-events: none;
 }
 
 .viewer-bar {
@@ -424,11 +435,12 @@ body {
   border-radius: 6px;
   line-height: 1;
   padding: 2px 6px;
-  visibility: hidden;
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
 }
 
-.history-list li:hover .x-btn {
-  visibility: visible;
+.x-btn:hover {
+  opacity: 1;
 }
 
 .x-btn:hover {
