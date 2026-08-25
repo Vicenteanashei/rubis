@@ -20,13 +20,17 @@ export default function App() {
   const [solution, setSolution] = useState<string | null>(null);
   const [solving, setSolving] = useState(false);
   const [solveError, setSolveError] = useState<string | null>(null);
-  const [view, setView] = useState<{ alg: AlgType; label: string } | null>(null);
+  const [view, setView] = useState<{
+    alg: AlgType;
+    kind: 'scramble' | 'solución';
+    fromSolve: boolean;
+  } | null>(null);
   const [solves, setSolves] = useState<SolveRecord[]>(loadSolves);
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const scrambleIdRef = useRef(0);
   const { solve } = useSolver();
 
-  const newScramble = useCallback(async () => {
+  const newScramble = useCallback(async (fromSolve: boolean) => {
     const id = ++scrambleIdRef.current;
     setGenerating(true);
     setSolution(null);
@@ -35,7 +39,7 @@ export default function App() {
       const alg = await randomScrambleForEvent('333');
       if (id !== scrambleIdRef.current) return;
       setScramble(alg);
-      setView({ alg, label: 'scramble' });
+      setView({ alg, kind: 'scramble', fromSolve });
     } catch {
       if (id === scrambleIdRef.current) {
         setSolveError(
@@ -48,7 +52,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    void newScramble();
+    void newScramble(false);
   }, [newScramble]);
 
   useEffect(() => saveSettings(settings), [settings]);
@@ -62,7 +66,7 @@ export default function App() {
     try {
       const result = await solve(current.toString());
       setSolution(result);
-      setView({ alg: new Alg(result), label: 'solución' });
+      setView({ alg: new Alg(result), kind: 'solución', fromSolve: false });
     } catch (err) {
       setSolveError(`Error del solver: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
@@ -80,7 +84,7 @@ export default function App() {
           date: Date.now(),
         },
       ]);
-      void newScramble();
+      void newScramble(true);
     },
     [newScramble],
   );
@@ -123,14 +127,16 @@ export default function App() {
         <div className="viewer-wrap panel">
           <CubeViewer
             alg={view?.alg ?? null}
-            autoplay={view?.label === 'solución'}
+            autoplay={view?.kind === 'solución'}
           />
           <div className="viewer-bar">
             <span className="view-label">
-              {view?.label === 'solución'
+              {view?.kind === 'solución'
                 ? 'Solución — síguela paso a paso con los controles'
                 : view
-                  ? 'Cubo resuelto · sostén el tuyo con BLANCO arriba y VERDE al frente · parte siempre del cubo resuelto'
+                  ? view.fromSolve
+                    ? '✓ Solve guardado — nuevo scramble cargado en el 3D · BLANCO arriba, VERDE al frente'
+                    : 'Cubo resuelto · sostén el tuyo con BLANCO arriba y VERDE al frente · parte siempre del cubo resuelto'
                   : 'Cargando cubo…'}
             </span>
           </div>
@@ -142,7 +148,7 @@ export default function App() {
           solution={solution}
           solving={solving}
           solveError={solveError}
-          onNewScramble={() => void newScramble()}
+          onNewScramble={() => void newScramble(false)}
           onSolve={() => void requestSolution()}
         />
 
