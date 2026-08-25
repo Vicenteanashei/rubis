@@ -1,0 +1,5 @@
+{
+  "name": "empty-stub",
+  "version": "1.0.0",
+  "description": "Stub vacio para anular la dependencia innecesaria de npm en cubejs"
+}
