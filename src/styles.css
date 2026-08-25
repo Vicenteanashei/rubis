@@ -184,6 +184,24 @@ body {
   text-align: center;
 }
 
+.step-count.live {
+  color: var(--green);
+  font-weight: 700;
+  min-width: 90px;
+}
+
+.cube-controls .stop {
+  background: var(--red);
+  border-color: transparent;
+  color: white;
+  font-weight: 600;
+}
+
+.cube-controls .stop:hover:not(:disabled) {
+  filter: brightness(1.12);
+  background: var(--red);
+}
+
 .scramble-header,
 .history-header {
   display: flex;
