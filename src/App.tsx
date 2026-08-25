@@ -128,6 +128,7 @@ export default function App() {
           <CubeViewer
             alg={view?.alg ?? null}
             autoplay={view?.kind === 'solución'}
+            setup={view?.kind === 'solución' ? (scramble?.toString() ?? null) : null}
           />
           <div className="viewer-bar">
             <span className="view-label">
