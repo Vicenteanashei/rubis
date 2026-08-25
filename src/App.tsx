@@ -21,7 +21,7 @@ export default function App() {
   const [solving, setSolving] = useState(false);
   const [solveError, setSolveError] = useState<string | null>(null);
   const [view, setView] = useState<{ alg: AlgType; label: string } | null>(null);
-  const [restartSignal, setRestartSignal] = useState(0);
+  const [playSignal, setPlaySignal] = useState(0);
   const [solves, setSolves] = useState<SolveRecord[]>(loadSolves);
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const scrambleIdRef = useRef(0);
@@ -64,6 +64,7 @@ export default function App() {
       const result = await solve(current.toString());
       setSolution(result);
       setView({ alg: new Alg(result), label: 'solución' });
+      setPlaySignal((v) => v + 1);
     } catch (err) {
       setSolveError(`Error del solver: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
@@ -122,17 +123,21 @@ export default function App() {
 
       <main className="main">
         <div className="viewer-wrap panel">
-          <CubeViewer alg={view?.alg ?? null} restartSignal={restartSignal} />
+          <CubeViewer alg={view?.alg ?? null} playSignal={playSignal} />
           <div className="viewer-bar">
             <span className="view-label">
-              {view ? `Mostrando: ${view.label}` : 'Cargando cubo…'}
+              {view
+                ? view.label === 'solución'
+                  ? 'Mostrando: solución'
+                  : 'Cubo resuelto — ejecuta el scramble para verlo'
+                : 'Cargando cubo…'}
             </span>
             <button
-              className="btn small ghost"
-              onClick={() => setRestartSignal((v) => v + 1)}
+              className="btn small primary"
+              onClick={() => setPlaySignal((v) => v + 1)}
               disabled={!view}
             >
-              Repetir animación
+              {view?.label === 'solución' ? 'Repetir solución' : '▶ Ejecutar scramble'}
             </button>
           </div>
         </div>

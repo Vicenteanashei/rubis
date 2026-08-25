@@ -7,14 +7,15 @@ type TwistyPlayerElement = HTMLElement & {
   alg: AlgType;
   tempoScale: number;
   play?: () => void;
+  pause?: () => void;
 };
 
 interface CubeViewerProps {
   alg: AlgType | null;
-  restartSignal: number;
+  playSignal: number;
 }
 
-export function CubeViewer({ alg, restartSignal }: CubeViewerProps) {
+export function CubeViewer({ alg, playSignal }: CubeViewerProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<TwistyPlayerElement | null>(null);
   const [ready, setReady] = useState(false);
@@ -53,10 +54,19 @@ export function CubeViewer({ alg, restartSignal }: CubeViewerProps) {
     if (!ready) return;
     const player = playerRef.current;
     if (!player || !alg) return;
+    player.pause?.();
+    player.alg = new Alg(alg.toString());
+  }, [alg, ready]);
+
+  useEffect(() => {
+    if (!ready || !playSignal) return;
+    const player = playerRef.current;
+    if (!player || !alg) return;
     player.alg = new Alg(alg.toString());
     player.tempoScale = 1.15;
     player.play?.();
-  }, [alg, restartSignal, ready]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playSignal, ready]);
 
   return (
     <div ref={hostRef} className="cube-viewer">
