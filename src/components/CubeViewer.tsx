@@ -5,10 +5,10 @@ import type { Alg as AlgType } from 'cubing/alg';
 
 type TwistyPlayerElement = HTMLElement & {
   alg: AlgType;
+  experimentalSetupAlg?: AlgType;
   tempoScale: number;
   play?: () => void;
   pause?: () => void;
-  experimentalAddMove?: (move: string) => void;
 };
 
 const MOVE_GAP_MS = 1500;
@@ -36,6 +36,16 @@ export function CubeViewer({ alg, autoplay }: CubeViewerProps) {
   const tokens = useMemo(
     () => alg?.toString().split(' ').filter(Boolean) ?? [],
     [alg],
+  );
+
+  const quartersPlan = useMemo(
+    () =>
+      tokens.map((token) =>
+        token.endsWith('2')
+          ? { label: token, quarters: [token.slice(0, -1), token.slice(0, -1)] }
+          : { label: token, quarters: [token] },
+      ),
+    [tokens],
   );
 
   useEffect(() => {
@@ -74,6 +84,24 @@ export function CubeViewer({ alg, autoplay }: CubeViewerProps) {
     };
   }, []);
 
+  const showStateAt = useCallback(
+    (moveCount: number, quarterCount: number) => {
+      const player = playerRef.current;
+      if (!player) return;
+      player.pause?.();
+      const doneQuarters = quartersPlan
+        .slice(0, moveCount)
+        .flatMap((m) => m.quarters);
+      const partial = quartersPlan[moveCount]?.quarters
+        .slice(0, quarterCount)
+        .join(' ');
+      const setup = [...doneQuarters, ...(partial ? [partial] : [])].join(' ');
+      player.experimentalSetupAlg = new Alg(setup);
+      player.alg = new Alg('');
+    },
+    [quartersPlan],
+  );
+
   const cancelPlayback = useCallback(() => {
     runIdRef.current++;
     playerRef.current?.pause?.();
@@ -83,12 +111,10 @@ export function CubeViewer({ alg, autoplay }: CubeViewerProps) {
 
   useEffect(() => {
     if (!ready) return;
-    const player = playerRef.current;
-    if (!player) return;
     cancelPlayback();
-    player.alg = new Alg(alg ? alg.toString() : '');
+    showStateAt(0, 0);
     setStepIdx(0);
-  }, [alg, ready, cancelPlayback]);
+  }, [alg, ready, cancelPlayback, showStateAt]);
 
   const playRhythmic = useCallback(async () => {
     const player = playerRef.current;
@@ -100,45 +126,53 @@ export function CubeViewer({ alg, autoplay }: CubeViewerProps) {
       return alive();
     };
 
+    const animateQuarter = (quarter: string, priorQuarters: string[]) => {
+      if (!alive()) return;
+      player.pause?.();
+      player.experimentalSetupAlg = new Alg(priorQuarters.join(' '));
+      player.alg = new Alg(quarter);
+      player.tempoScale = TURN_TEMPO;
+      player.play?.();
+    };
+
     player.pause?.();
-    player.alg = new Alg('');
-    player.tempoScale = TURN_TEMPO;
+    showStateAt(0, 0);
     setStepIdx(0);
     setPlaying(true);
 
     try {
       if (!(await pacedSleep(120))) return;
-      for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        setCurrentMove(token);
-        const isDouble = token.endsWith('2');
-        const base = isDouble ? token.slice(0, -1) : token;
-        const quarters = isDouble ? [base, base] : [token];
-        for (let q = 0; q < quarters.length; q++) {
+      let priorQuarters: string[] = [];
+      for (let i = 0; i < quartersPlan.length; i++) {
+        const move = quartersPlan[i];
+        setCurrentMove(move.label);
+        for (let q = 0; q < move.quarters.length; q++) {
           if (!alive()) return;
-          player.experimentalAddMove?.(quarters[q]);
-          player.play?.();
-          const wait = isDouble && q === 0 ? DOUBLE_BEAT_MS : MOVE_GAP_MS;
+          animateQuarter(move.quarters[q], priorQuarters);
+          const wait =
+            move.quarters.length > 1 && q === 0
+              ? DOUBLE_BEAT_MS
+              : MOVE_GAP_MS;
           if (!(await pacedSleep(wait))) return;
+          priorQuarters = [...priorQuarters, move.quarters[q]];
         }
         setStepIdx(i + 1);
       }
+      showStateAt(quartersPlan.length, 0);
       setCurrentMove(null);
     } finally {
       if (alive()) setPlaying(false);
     }
-  }, [alg, tokens]);
+  }, [alg, quartersPlan, showStateAt]);
 
   const goToStep = useCallback(
-    (idx: number) => {
+    (moveCount: number) => {
       cancelPlayback();
-      const clamped = Math.min(tokens.length, Math.max(0, idx));
-      const player = playerRef.current;
-      if (!player) return;
-      player.alg = new Alg(tokens.slice(0, clamped).join(' '));
+      const clamped = Math.min(tokens.length, Math.max(0, moveCount));
+      showStateAt(clamped, 0);
       setStepIdx(clamped);
     },
-    [tokens, cancelPlayback],
+    [tokens.length, cancelPlayback, showStateAt],
   );
 
   return (
@@ -154,7 +188,9 @@ export function CubeViewer({ alg, autoplay }: CubeViewerProps) {
           ◀ Atrás
         </button>
         <span className={`step-count${currentMove ? ' live' : ''}`}>
-          {currentMove ? `${currentMove} · ${stepIdx}/${tokens.length}` : `${stepIdx}/${tokens.length}`}
+          {currentMove
+            ? `${currentMove} · ${stepIdx}/${tokens.length}`
+            : `${stepIdx}/${tokens.length}`}
         </span>
         <button
           onClick={() => goToStep(stepIdx + 1)}
