@@ -21,7 +21,6 @@ export default function App() {
   const [solving, setSolving] = useState(false);
   const [solveError, setSolveError] = useState<string | null>(null);
   const [view, setView] = useState<{ alg: AlgType; label: string } | null>(null);
-  const [playSignal, setPlaySignal] = useState(0);
   const [solves, setSolves] = useState<SolveRecord[]>(loadSolves);
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const scrambleIdRef = useRef(0);
@@ -64,7 +63,6 @@ export default function App() {
       const result = await solve(current.toString());
       setSolution(result);
       setView({ alg: new Alg(result), label: 'solución' });
-      setPlaySignal((v) => v + 1);
     } catch (err) {
       setSolveError(`Error del solver: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
@@ -123,22 +121,18 @@ export default function App() {
 
       <main className="main">
         <div className="viewer-wrap panel">
-          <CubeViewer alg={view?.alg ?? null} playSignal={playSignal} />
+          <CubeViewer
+            alg={view?.alg ?? null}
+            autoplay={view?.label === 'solución'}
+          />
           <div className="viewer-bar">
             <span className="view-label">
-              {view
-                ? view.label === 'solución'
-                  ? 'Mostrando: solución'
-                  : 'Cubo resuelto — ejecuta el scramble para verlo'
-                : 'Cargando cubo…'}
+              {view?.label === 'solución'
+                ? 'Solución — síguela paso a paso con los controles'
+                : view
+                  ? 'Cubo resuelto · sostén el tuyo con BLANCO arriba y VERDE al frente · parte siempre del cubo resuelto'
+                  : 'Cargando cubo…'}
             </span>
-            <button
-              className="btn small primary"
-              onClick={() => setPlaySignal((v) => v + 1)}
-              disabled={!view}
-            >
-              {view?.label === 'solución' ? 'Repetir solución' : '▶ Ejecutar scramble'}
-            </button>
           </div>
         </div>
 

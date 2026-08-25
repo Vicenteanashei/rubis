@@ -124,7 +124,7 @@ body {
 .viewer-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 12px;
   padding: 0 4px 2px;
 }
@@ -132,6 +132,56 @@ body {
 .view-label {
   color: var(--muted);
   font-size: 13px;
+  text-align: center;
+}
+
+.cube-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cube-controls button {
+  min-width: 40px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: #1b2130;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s ease;
+}
+
+.cube-controls button:hover:not(:disabled) {
+  background: #242e44;
+}
+
+.cube-controls button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cube-controls .play-all {
+  background: var(--accent);
+  border-color: transparent;
+  color: white;
+  font-weight: 600;
+}
+
+.cube-controls .play-all:hover:not(:disabled) {
+  filter: brightness(1.12);
+  background: var(--accent);
+}
+
+.step-count {
+  font-family: var(--mono);
+  color: var(--muted);
+  font-size: 12.5px;
+  min-width: 54px;
+  text-align: center;
 }
 
 .scramble-header,
